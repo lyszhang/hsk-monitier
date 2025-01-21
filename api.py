@@ -204,10 +204,35 @@ def get_account_fee_in_ethereum_daily(api_base, target_date, sender_address, rec
         for tx in txlist:
             if tx.get("to").lower() == receiver_address.lower():
                 tx_fee_in_ether = int(tx.get("gasPrice"))*int(tx.get("gasUsed"))/1e18
-                fee_total = fee_total + tx_fee_in_ether 
                 # print(tx.get("hash"))
                 # print(tx_fee_in_ether)
-            
+
+                # 获取交易的详细信息（transaction receipt）
+                txhash = tx.get("hash")
+                receipt_params = {
+                    "chainid": 1,
+                    "module": "proxy",
+                    "action": "eth_getTransactionReceipt",
+                    "txhash": txhash,
+                    "apikey": "EPVRT2D6HAHUFM5H2IHXGSYZT377B7866N"
+                }
+                receipt_response = requests.get(api_url, params=receipt_params)
+
+                 # 检查交易收据的响应状态码
+                if receipt_response.status_code != 200:
+                    raise Exception(f"get_account_fee_in_ethereum_daily Failed to get receipt for tx {txhash}. Status code: {receipt_response.status_code}")
+
+                receipt_data = receipt_response.json().get("result")
+                blob_fee = 0
+                # 如果 receipt_data 中有 blobGasPrice 和 blobGasUsed，计算 blob_fee
+                if "blobGasPrice" in receipt_data and "blobGasUsed" in receipt_data:
+                    blob_fee = int(receipt_data.get("blobGasPrice"), 16) * int(receipt_data.get("blobGasUsed"), 16) / 1e18
+
+                tx_fee_total = tx_fee_in_ether + blob_fee
+                print(f"tx Hash: {txhash}, tx fee total:{tx_fee_total}")
+
+                fee_total = fee_total + tx_fee_total
+
         return fee_total
     else:
         raise Exception(f"API request failed with status code {response.status_code}: {response.text}")
