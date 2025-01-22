@@ -176,7 +176,32 @@ def get_ethereum_block_height(target_date):
 
     return start_block_height, end_block_height
 
-def get_account_fee_in_ethereum_daily(api_base, target_date, sender_address, receiver_address):
+def get_ethereum_block_height2(target_date_begin_datetime, target_date_end_datetime):
+    """
+    直接通过接口查询指定日期或月份的起始日期
+
+    :param target_date: 目标日期，格式为"YYYY-MM-DD"
+    :return: 目标日期起始区块高度和结束区块高度
+    """
+    blockscout_url = "https://coins.llama.fi/block/ethereum/"
+
+    # target_date_begin_datetime = datetime.datetime.strptime(target_date, "%Y-%m-%d")
+    # target_date_end_datetime = datetime.datetime.strptime(end_date, "%Y-%m-%d")
+    #target_date_end_datetime = (target_date_begin_datetime + datetime.timedelta(days=1))
+    target_date_begin = int((target_date_begin_datetime-datetime.timedelta(hours=8)).timestamp())
+    target_date_end = int((target_date_end_datetime-datetime.timedelta(hours=8)).timestamp())
+
+    response_date_begin = requests.get(blockscout_url+str(target_date_begin))
+    response_date_end = requests.get(blockscout_url+str(target_date_end))
+
+    if response_date_begin.status_code == 200 & response_date_end.status_code == 200:
+        start_block_height = response_date_begin.json().get("height", "0x0")
+        end_block_height = response_date_end.json().get("height", "0x0")
+        return start_block_height, end_block_height
+    else:
+        raise Exception(f"RPC request failed with status code {response_date_begin.status_code}: {response_date_begin.text}")
+
+def get_account_fee_in_ethereum_daily(api_base, target_date, end_date, sender_address, receiver_address):
     """
     获取指定日期对应账户的以太坊交易费支出。
 
@@ -185,7 +210,7 @@ def get_account_fee_in_ethereum_daily(api_base, target_date, sender_address, rec
     :return: 交易数量
     """
     api_url = api_base
-    start_height, end_height = get_ethereum_block_height(target_date)
+    start_height, end_height = get_ethereum_block_height2(target_date, end_date)
     params = {
         "chainid": 1,
         "module": "account",
@@ -268,3 +293,8 @@ def get_eth_and_hsk_price(api_base):
     eth_price = get_spot_price(api_url, "ETH_USDT")
     hsk_price = get_spot_price(api_url, "HSK_USDT")
     return eth_price, hsk_price
+
+if __name__ == "__main__":
+    target_date = "2024-12-19"  
+    print(get_ethereum_block_height(target_date))
+    print(get_ethereum_block_height2(target_date))
