@@ -1,5 +1,6 @@
 import requests
 import datetime
+from datetime import timezone
 
 def get_hsk_block_height(target_date):
     """
@@ -23,6 +24,44 @@ def get_hsk_block_height(target_date):
     end_block_height = start_block_height + interval_blocks - 1
 
     return hex(start_block_height), hex(end_block_height)
+
+def get_hsk_block_height2(target_date_begin_datetime, target_date_end_datetime):
+    """
+    直接通过接口查询指定日期或月份的起始日期
+
+    :param target_date: 目标日期，格式为"YYYY-MM-DD"
+    :return: 目标日期起始区块高度和结束区块高度
+    """
+    blockscout_url = "https://hashkey.blockscout.com/api"
+
+    # target_date_begin_datetime = datetime.datetime.strptime(target_date, "%Y-%m-%d")
+    # target_date_end_datetime = datetime.datetime.strptime(end_date, "%Y-%m-%d")
+    # target_date_end_datetime = (target_date_begin_datetime + datetime.timedelta(days=1))
+    target_date_begin = int((target_date_begin_datetime-datetime.timedelta(hours=8)).timestamp())
+    target_date_end = int((target_date_end_datetime-datetime.timedelta(hours=8)).timestamp())
+
+    payload_date_begin = {
+        "module": "block",
+        "action": "getblocknobytime",
+        "timestamp": target_date_begin,
+        "closest": "before"
+    }
+    payload_date_end = {
+        "module": "block",
+        "action": "getblocknobytime",
+        "timestamp": target_date_end,
+        "closest": "before"
+    }
+    response_date_begin = requests.post(blockscout_url, params=payload_date_begin)
+    response_date_end = requests.post(blockscout_url, params=payload_date_end)
+
+    if response_date_begin.status_code == 200 & response_date_end.status_code == 200:
+        start_block_height = response_date_begin.json().get("result").get("blockNumber", "0x0")
+        end_block_height = response_date_end.json().get("result").get("blockNumber", "0x0")
+        return hex(int(start_block_height)), hex(int(end_block_height))
+    else:
+        raise Exception(f"RPC request failed with status code {response_date_begin.status_code}: {response_date_begin.text}")
+
 
 def get_balance(rpc_url, address, block_height):
     """
@@ -48,7 +87,7 @@ def get_balance(rpc_url, address, block_height):
     else:
         raise Exception(f"RPC request failed with status code {response.status_code}: {response.text}")
 
-def get_fee_income_info(target_date):
+def get_fee_income_info(target_date, end_date):
     rpc_url = "https://mainnet.hsk.xyz"
     # rpc_url = "https://hashkeychain-mainnet.alt.technology"
 
@@ -60,8 +99,7 @@ def get_fee_income_info(target_date):
 
     try:
         # 获取费用数据
-        start_height, end_height = get_hsk_block_height(target_date)
-
+        start_height, end_height = get_hsk_block_height2(target_date, end_date)
         print(f"*****日期 {target_date} 的区块高度范围: {start_height} - {end_height}")
 
         total_income = 0
@@ -78,3 +116,8 @@ def get_fee_income_info(target_date):
 
     except Exception as e:
         print(f"查询过程中出错: {e}")
+
+if __name__ == "__main__":
+    target_date = "2024-12-19"  
+    print(get_hsk_block_height(target_date))
+    print(get_hsk_block_height2(target_date))
