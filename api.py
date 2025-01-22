@@ -254,8 +254,7 @@ def get_account_fee_in_ethereum_daily(api_base, target_date, end_date, sender_ad
                     blob_fee = int(receipt_data.get("blobGasPrice"), 16) * int(receipt_data.get("blobGasUsed"), 16) / 1e18
 
                 tx_fee_total = tx_fee_in_ether + blob_fee
-                print(f"tx Hash: {txhash}, tx fee total:{tx_fee_total}")
-
+                # print(f"tx Hash: {txhash}, tx fee total:{tx_fee_total}")
                 fee_total = fee_total + tx_fee_total
 
         return fee_total

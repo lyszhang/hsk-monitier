@@ -100,7 +100,7 @@ def get_fee_income_info(target_date, end_date):
     try:
         # 获取费用数据
         start_height, end_height = get_hsk_block_height2(target_date, end_date)
-        print(f"*****日期 {target_date} 的区块高度范围: {start_height} - {end_height}")
+        print(f"*****日期 {target_date} 的区块高度范围: {int(start_height,16)} - {int(end_height,16)}")
 
         total_income = 0
         for address in addresses:
